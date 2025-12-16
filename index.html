@@ -114,7 +114,7 @@
     .status.bad .sDot { background: var(--bad); }
 
     .log {
-      max-height: 210px;
+      max-height: 360px;
       overflow: auto;
       display: grid;
       gap: 8px;
@@ -169,13 +169,16 @@
     .tabs {
       grid-column: 1 / -1;
       display: flex;
-      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       padding: 6px;
       border: 1px solid var(--line);
       border-radius: 12px;
       background: var(--panel2);
       box-shadow: var(--shadow);
     }
+    .tabsLeft, .tabsRight { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .tabBtn {
       padding: 9px 10px;
       border-radius: 10px;
@@ -312,6 +315,7 @@
     }
     .camErr .box .t{ font-weight:650; margin-bottom:6px; }
     .camErr .box .m{ font-size:12px; color: color-mix(in oklab, var(--text) 80%, var(--muted)); line-height:1.4; }
+    .camErr .box .actions{ margin-top:10px; display:flex; gap:8px; justify-content:center; pointer-events:auto; }
 
     /* Modal */
     .modalBackdrop {
@@ -434,15 +438,21 @@
         <div class="toolbar">
           <span class="pill"><span id="connDot" class="dot"></span><span id="connText">在线（仿真）</span></span>
           <button id="btnTheme" class="ghost">浅色模式</button>
-          <button id="btnReserve" class="primary">座位预约</button>
-          <button id="btnPause" class="ghost">暂停仿真</button>
           <button id="btnLogout" class="ghost">退出</button>
         </div>
       </header>
 
+      <!-- Tabs + 操作按钮（座位预约 / 暂停仿真）移动到这里 -->
       <nav class="tabs">
-        <button class="tabBtn active" data-tab="ops">交通态势</button>
-        <button class="tabBtn" data-tab="cams">监控调看</button>
+        <div class="tabsLeft">
+          <button class="tabBtn active" data-tab="ops">交通态势</button>
+          <button class="tabBtn" data-tab="cams">监控调看</button>
+        </div>
+        <div class="tabsRight">
+          <button id="btnReserve" class="primary">座位预约</button>
+          <button id="btnPause" class="ghost">暂停仿真</button>
+          <button id="btnViewLog" class="ghost">事件日志</button>
+        </div>
       </nav>
 
       <!-- 交通态势 -->
@@ -524,7 +534,7 @@
                     </g>
                   </g>
 
-                  <!-- 大型传送带+座位（两组） -->
+                  <!-- 载具（四辆） -->
                   <g id="belt1" class="belt">
                     <rect class="track" x="-28" y="-14" width="56" height="28" rx="10"></rect>
                     <rect class="top" x="-22" y="-9" width="44" height="18" rx="8"></rect>
@@ -541,16 +551,38 @@
                     <circle class="seat" cx="12" cy="0" r="4"></circle>
                     <circle class="core" cx="0" cy="0" r="2"></circle>
                   </g>
+                  <g id="belt3" class="belt">
+                    <rect class="track" x="-28" y="-14" width="56" height="28" rx="10"></rect>
+                    <rect class="top" x="-22" y="-9" width="44" height="18" rx="8"></rect>
+                    <circle class="seat" cx="-12" cy="0" r="4"></circle>
+                    <circle class="seat" cx="0" cy="0" r="4"></circle>
+                    <circle class="seat" cx="12" cy="0" r="4"></circle>
+                    <circle class="core" cx="0" cy="0" r="2"></circle>
+                  </g>
+                  <g id="belt4" class="belt">
+                    <rect class="track" x="-28" y="-14" width="56" height="28" rx="10"></rect>
+                    <rect class="top" x="-22" y="-9" width="44" height="18" rx="8"></rect>
+                    <circle class="seat" cx="-12" cy="0" r="4"></circle>
+                    <circle class="seat" cx="0" cy="0" r="4"></circle>
+                    <circle class="seat" cx="12" cy="0" r="4"></circle>
+                    <circle class="core" cx="0" cy="0" r="2"></circle>
+                  </g>
 
                   <line id="vec1" x1="0" y1="0" x2="0" y2="0"
                         stroke="color-mix(in oklab, var(--accent) 70%, white)" stroke-width="3" opacity="0.9" />
                   <line id="vec2" x1="0" y1="0" x2="0" y2="0"
                         stroke="color-mix(in oklab, var(--ok) 70%, white)" stroke-width="3" opacity="0.9" />
+                  <line id="vec3" x1="0" y1="0" x2="0" y2="0"
+                        stroke="color-mix(in oklab, var(--warn) 70%, white)" stroke-width="3" opacity="0.9" />
+                  <line id="vec4" x1="0" y1="0" x2="0" y2="0"
+                        stroke="color-mix(in oklab, var(--text) 70%, var(--accent))" stroke-width="3" opacity="0.9" />
                 </svg>
 
                 <div class="legend">
-                  <div class="tag"><strong>蓝</strong> 传送带-01（主环线/可分流支线）</div>
-                  <div class="tag"><strong>绿</strong> 传送带-02（主环线/可分流支线）</div>
+                  <div class="tag"><strong>载具</strong> 传送带-01（主环线/可分流支线）</div>
+                  <div class="tag"><strong>载具</strong> 传送带-02（主环线/可分流支线）</div>
+                  <div class="tag"><strong>载具</strong> 传送带-03（主环线/可分流支线）</div>
+                  <div class="tag"><strong>载具</strong> 传送带-04（主环线/可分流支线）</div>
                   <div class="tag">支线：T2 ↔ T6</div>
                 </div>
               </div>
@@ -590,6 +622,36 @@
 
             <div class="card">
               <div class="row">
+                <div>
+                  <div style="font-weight:650;">传送带-03</div>
+                  <div class="k">下一站：<span id="b3Next">—</span></div>
+                </div>
+                <span class="status" id="b3Status"><span class="sDot"></span><span id="b3StatusText">运行中</span></span>
+              </div>
+              <div style="height:8px;"></div>
+              <div class="row"><div class="k">速度</div><div class="v"><span id="b3Speed">—</span> m/s</div></div>
+              <div class="row"><div class="k">载客</div><div class="v"><span id="b3Pax">—</span> / <span id="b3Cap">—</span></div></div>
+              <div class="row"><div class="k">剩余座位</div><div class="v"><span id="b3Seats">—</span></div></div>
+              <div class="row"><div class="k">延误</div><div class="v"><span id="b3Delay">—</span> s</div></div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div style="font-weight:650;">传送带-04</div>
+                  <div class="k">下一站：<span id="b4Next">—</span></div>
+                </div>
+                <span class="status" id="b4Status"><span class="sDot"></span><span id="b4StatusText">运行中</span></span>
+              </div>
+              <div style="height:8px;"></div>
+              <div class="row"><div class="k">速度</div><div class="v"><span id="b4Speed">—</span> m/s</div></div>
+              <div class="row"><div class="k">载客</div><div class="v"><span id="b4Pax">—</span> / <span id="b4Cap">—</span></div></div>
+              <div class="row"><div class="k">剩余座位</div><div class="v"><span id="b4Seats">—</span></div></div>
+              <div class="row"><div class="k">延误</div><div class="v"><span id="b4Delay">—</span> s</div></div>
+            </div>
+
+            <div class="card">
+              <div class="row">
                 <div style="font-weight:650;">线路健康</div>
                 <span class="status" id="lineStatus"><span class="sDot"></span><span id="lineStatusText">良好</span></span>
               </div>
@@ -599,13 +661,14 @@
               <div class="row"><div class="k">告警</div><div class="v" id="alarms">0</div></div>
             </div>
 
+            <!-- 原“事件日志”区域改为：按钮 + 弹窗查看（日志仍保留最近 30 条，逻辑不变） -->
             <div class="card">
               <div class="row">
                 <div style="font-weight:650;">事件日志</div>
-                <div class="k">保留最近 30 条</div>
+                <div class="k">点击上方按钮弹窗查看</div>
               </div>
               <div style="height:10px;"></div>
-              <div class="log" id="log"></div>
+              <div class="hint">保留最近 30 条；支持滚动查看；仍在后台持续记录。</div>
             </div>
           </aside>
         </div>
@@ -620,20 +683,20 @@
         <div class="bd">
           <div class="camGrid">
             <div class="camView">
-              <!-- 真正的视频播放器 -->
               <video id="camVideo" autoplay muted playsinline loop></video>
 
-              <!-- 播放失败提示 -->
               <div class="camErr" id="camErr">
                 <div class="box">
                   <div class="t">视频无法播放</div>
                   <div class="m" id="camErrMsg">
                     请确认 cam01.mp4 ~ cam07.mp4 与本 HTML 在同一目录，并使用本地服务器方式打开（Live Server 或 python http.server）。
                   </div>
+                  <div class="actions">
+                    <button id="btnCamRetry" class="primary">重试播放</button>
+                  </div>
                 </div>
               </div>
 
-              <!-- HUD -->
               <div class="camHud">
                 <div class="top">
                   <div class="label">
@@ -717,6 +780,24 @@
     </div>
   </div>
 
+  <!-- 事件日志弹窗（新增） -->
+  <div class="modalBackdrop" id="logModalBackdrop" role="dialog" aria-modal="true" aria-label="事件日志窗口">
+    <div class="modal" style="width:min(760px,100%);">
+      <div class="mh">
+        <h3>事件日志</h3>
+        <button id="btnLogClose" class="ghost">关闭</button>
+      </div>
+      <div class="mb">
+        <div class="hint">保留最近 30 条（最新在最上方）。</div>
+        <div class="log" id="log"></div>
+      </div>
+      <div class="actions">
+        <button id="btnLogClearHint" class="ghost" disabled title="演示版不提供清空">已启用滚动查看</button>
+        <button id="btnLogClose2" class="primary">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ===== 主题 ===== */
     function applyTheme(theme) {
@@ -786,6 +867,8 @@
       belts:{
         B1:{ id:"传送带-01", mode:"main", t:0.14, u:0.00, vMain:0.020, vBranch:0.020, cap:48, pax:18, delay:0, status:"ok", next:"T1" },
         B2:{ id:"传送带-02", mode:"main", t:0.64, u:0.00, vMain:0.017, vBranch:0.018, cap:64, pax:31, delay:0, status:"ok", next:"T5" },
+        B3:{ id:"传送带-03", mode:"main", t:0.34, u:0.00, vMain:0.019, vBranch:0.019, cap:56, pax:22, delay:0, status:"ok", next:"T3" },
+        B4:{ id:"传送带-04", mode:"main", t:0.86, u:0.00, vMain:0.016, vBranch:0.017, cap:52, pax:27, delay:0, status:"ok", next:"T1" },
       }
     };
 
@@ -862,8 +945,13 @@
 
     const belt1 = el("belt1");
     const belt2 = el("belt2");
+    const belt3 = el("belt3");
+    const belt4 = el("belt4");
     const vec1 = el("vec1");
     const vec2 = el("vec2");
+    const vec3 = el("vec3");
+    const vec4 = el("vec4");
+
     const logEl = el("log");
 
     function escapeHtml(s){
@@ -935,6 +1023,8 @@
 
       updateBeltCard("b1", state.belts.B1);
       updateBeltCard("b2", state.belts.B2);
+      updateBeltCard("b3", state.belts.B3);
+      updateBeltCard("b4", state.belts.B4);
 
       el("alarms").textContent=state.alarms;
       const lineLevel = state.alarms===0?"ok":(state.alarms<=2?"warn":"bad");
@@ -968,7 +1058,7 @@
     }
 
     /* ===== 到站/分流 ===== */
-    let lastDock = { B1:null, B2:null };
+    let lastDock = { B1:null, B2:null, B3:null, B4:null };
 
     function dockMain(key, stationId){
       const B = state.belts[key];
@@ -1063,19 +1153,33 @@
     const camErr = el("camErr");
     const camErrMsg = el("camErrMsg");
     const camSrcBadge = el("camSrcBadge");
+    const btnCamRetry = el("btnCamRetry");
 
     let camRuntime = { fps:24, lag:80, online:true };
+    let currentCamSrc = "cam01.mp4";
 
     /* ==== 视频接口（你以后可以把 src 换成网络/HLS 地址） ==== */
     function setVideoSource(url) {
+      currentCamSrc = url;
       camErr.style.display = "none";
+
+      // 强化可用性：确保 autoplay 相关属性在运行时也被设置
+      camVideo.muted = true;
+      camVideo.loop = true;
+      camVideo.autoplay = true;
+      camVideo.setAttribute("playsinline", "");
+      camVideo.setAttribute("muted", "");
+      camVideo.setAttribute("autoplay", "");
+
       camVideo.src = url;
       camVideo.load();
+
       camVideo.play().then(()=>{
         camErr.style.display = "none";
       }).catch(()=>{
         camErr.style.display = "grid";
       });
+
       camSrcBadge.textContent = `源：${url}`;
     }
 
@@ -1145,6 +1249,14 @@
           `无法加载 ${cur.src}。请确认文件存在且与 HTML 在同一目录，并用本地服务器方式访问。`;
       });
 
+      // 允许用户点击画面触发播放（提升“可用性”）
+      camVideo.addEventListener("click", ()=>{
+        camVideo.play().catch(()=>{ camErr.style.display="grid"; });
+      });
+      btnCamRetry.addEventListener("click", ()=>{
+        setVideoSource(currentCamSrc);
+      });
+
       renderCam("CAM-01");
     }
 
@@ -1158,7 +1270,7 @@
       }
       const penalty = state.alarms>=3?0.55:(state.alarms>=1?0.80:1.0);
 
-      for(const key of ["B1","B2"]){
+      for(const key of ["B1","B2","B3","B4"]){
         const B=state.belts[key];
         B.status = state.alarms>=4?"warn":"ok";
         if(Math.random()<0.004){
@@ -1177,6 +1289,8 @@
 
         if(key==="B1") (B.mode==="main") ? placeOnMain(belt1, vec1, B.t) : placeOnBranch(belt1, vec1, B.u);
         if(key==="B2") (B.mode==="main") ? placeOnMain(belt2, vec2, B.t) : placeOnBranch(belt2, vec2, B.u);
+        if(key==="B3") (B.mode==="main") ? placeOnMain(belt3, vec3, B.t) : placeOnBranch(belt3, vec3, B.u);
+        if(key==="B4") (B.mode==="main") ? placeOnMain(belt4, vec4, B.t) : placeOnBranch(belt4, vec4, B.u);
 
         maybeDock(key);
       }
@@ -1205,6 +1319,21 @@
       el("tabPanelCams").classList.toggle("hide", tab!=="cams");
     }
     document.querySelectorAll(".tabBtn").forEach(b=>b.addEventListener("click", ()=>setActiveTab(b.dataset.tab)));
+
+
+    /* ===== 事件日志弹窗 ===== */
+    const logModal = el("logModalBackdrop");
+    const btnViewLog = el("btnViewLog");
+    const btnLogClose = el("btnLogClose");
+    const btnLogClose2 = el("btnLogClose2");
+
+    function openLogModal(){ logModal.style.display="flex"; }
+    function closeLogModal(){ logModal.style.display="none"; }
+
+    btnViewLog.addEventListener("click", openLogModal);
+    btnLogClose.addEventListener("click", closeLogModal);
+    btnLogClose2.addEventListener("click", closeLogModal);
+    logModal.addEventListener("click", (e)=>{ if(e.target===logModal) closeLogModal(); });
 
     /* ===== 座位预约弹窗 ===== */
     const modal = el("modalBackdrop");
@@ -1280,9 +1409,13 @@
 
       state.belts.B1.next = nextInMainLoop(nearestMainStationId(state.belts.B1.t));
       state.belts.B2.next = nextInMainLoop(nearestMainStationId(state.belts.B2.t));
+      state.belts.B3.next = nextInMainLoop(nearestMainStationId(state.belts.B3.t));
+      state.belts.B4.next = nextInMainLoop(nearestMainStationId(state.belts.B4.t));
 
       placeOnMain(belt1, vec1, state.belts.B1.t);
       placeOnMain(belt2, vec2, state.belts.B2.t);
+      placeOnMain(belt3, vec3, state.belts.B3.t);
+      placeOnMain(belt4, vec4, state.belts.B4.t);
 
       addLog("系统启动", "控制台已就绪（本地仿真数据 + 本地视频监控源 cam01.mp4~cam07.mp4）。");
       updateUI();
