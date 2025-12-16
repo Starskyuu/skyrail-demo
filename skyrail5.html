@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>校园空中交通 · 监控与预约</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: rgba(15, 22, 32, 0.72);
+      --panel2: rgba(12, 18, 26, 0.70);
+      --text: #e6edf3;
+      --muted: #94a3b8;
+      --line: #1f2a37;
+      --track: #33547a;
+      --trackInner: #0b1a2a;
+      --accent: #60a5fa;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --btnA: #1b2636;
+      --btnB: #0f1a29;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    [data-theme="light"] {
+      --bg: #f6f7fb;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel2: rgba(255, 255, 255, 0.72);
+      --text: #0b1220;
+      --muted: #475569;
+      --line: #d7dde7;
+      --track: #8bb4ff;
+      --trackInner: #dbeafe;
+      --accent: #2563eb;
+      --btnA: #ffffff;
+      --btnB: #f3f5fb;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial;
+      background: radial-gradient(1200px 700px at 30% -10%, rgba(18, 32, 51, 0.28) 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+    [data-theme="light"] body {
+      background: radial-gradient(1200px 700px at 30% -10%, rgba(37, 99, 235, 0.10) 0%, var(--bg) 60%);
+    }
+
+    button, select, input {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--btnA), var(--btnB));
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 13px;
+      outline: none;
+    }
+    button { cursor: pointer; }
+    button:hover { border-color: color-mix(in oklab, var(--line) 40%, var(--accent)); }
+    input::placeholder { color: color-mix(in oklab, var(--muted) 75%, transparent); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel2);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+    .dot.off { background: var(--bad); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .panel .hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel .hd h2 { font-size: 13px; margin: 0; font-weight: 650; color: color-mix(in oklab, var(--text) 85%, var(--accent)); }
+    .panel .bd { padding: 12px; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel2);
+      padding: 10px;
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .k { color: var(--muted); font-size: 12px; }
+    .v { font-size: 12px; }
+
+    .status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 8px; border-radius: 999px; font-size: 12px;
+      border: 1px solid var(--line); background: var(--panel);
+    }
+    .status .sDot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+    .status.warn .sDot { background: var(--warn); }
+    .status.bad .sDot { background: var(--bad); }
+
+    .log {
+      max-height: 210px;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+      padding-right: 6px;
+    }
+    .logItem {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: color-mix(in oklab, var(--panel2) 85%, transparent);
+      display: grid;
+      gap: 4px;
+    }
+    .logItem .t { font-size: 12px; color: color-mix(in oklab, var(--text) 80%, var(--accent)); }
+    .logItem .m { font-size: 12px; color: var(--muted); line-height: 1.35; }
+    .logItem .ts { font-size: 11px; color: color-mix(in oklab, var(--muted) 65%, transparent); }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .title { display: flex; flex-direction: column; gap: 2px; }
+    .title h1 { font-size: 16px; margin: 0; font-weight: 650; }
+    .title .sub { font-size: 12px; color: var(--muted); }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tabs {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel2);
+      box-shadow: var(--shadow);
+    }
+    .tabBtn {
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: color-mix(in oklab, var(--panel) 80%, transparent);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tabBtn.active {
+      border-color: color-mix(in oklab, var(--accent) 65%, var(--line));
+      background: color-mix(in oklab, var(--accent) 12%, var(--panel));
+    }
+
+    .mapWrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: var(--panel2);
+      border-radius: 12px;
+      border: 1px solid color-mix(in oklab, var(--line) 75%, transparent);
+      overflow: hidden;
+    }
+    .mapWrap svg { width: 100%; height: 100%; display: block; }
+    .legend {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 8px;
+      background: var(--panel);
+    }
+    .tag strong { color: var(--text); font-weight: 650; }
+
+    .belt {
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25));
+    }
+    .belt rect.track { fill: color-mix(in oklab, var(--panel) 85%, transparent); stroke: color-mix(in oklab, var(--line) 60%, transparent); stroke-width: 2; }
+    .belt rect.top { fill: color-mix(in oklab, var(--accent) 20%, transparent); }
+    .belt circle.seat { fill: color-mix(in oklab, var(--text) 80%, transparent); opacity: 0.9; }
+    .belt circle.core { fill: var(--bg); opacity: 0.9; }
+
+    /* 摄像头区域 + 视频播放 */
+    .camGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .camView {
+      aspect-ratio: 16 / 10;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #000;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .camView video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+    .camHud {
+      position: absolute; inset: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .camHud .top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+    }
+    .camHud .label {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in oklab, var(--line) 75%, transparent);
+      background: color-mix(in oklab, var(--panel) 85%, transparent);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .camHud .meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in oklab, var(--line) 75%, transparent);
+      background: color-mix(in oklab, var(--panel) 75%, transparent);
+    }
+    .camBadge {
+      position:absolute;
+      left:10px;
+      bottom:10px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid color-mix(in oklab, var(--line) 75%, transparent);
+      background: color-mix(in oklab, var(--panel) 80%, transparent);
+      font-size:12px;
+      color: var(--text);
+      pointer-events:none;
+    }
+    .camErr {
+      position:absolute;
+      inset:0;
+      display:none;
+      place-items:center;
+      padding:14px;
+      text-align:center;
+      color: color-mix(in oklab, var(--text) 85%, var(--bad));
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.75));
+    }
+    .camErr .box{
+      max-width: 520px;
+      border:1px solid color-mix(in oklab, var(--bad) 45%, var(--line));
+      border-radius: 14px;
+      padding: 12px;
+      background: color-mix(in oklab, var(--panel) 60%, transparent);
+    }
+    .camErr .box .t{ font-weight:650; margin-bottom:6px; }
+    .camErr .box .m{ font-size:12px; color: color-mix(in oklab, var(--text) 80%, var(--muted)); line-height:1.4; }
+
+    /* Modal */
+    .modalBackdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+    [data-theme="light"] .modalBackdrop { background: rgba(2, 6, 23, 0.35); }
+    .modal {
+      width: min(600px, 100%);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: color-mix(in oklab, var(--panel) 95%, transparent);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .modal .mh {
+      padding: 12px 12px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal .mh h3 { margin: 0; font-size: 14px; font-weight: 650; }
+    .modal .mb { padding: 12px; display: grid; gap: 10px; }
+    .modal label { font-size: 12px; color: var(--muted); display: grid; gap: 6px; }
+    .modal .actions { display: flex; gap: 8px; justify-content: flex-end; padding: 12px; border-top: 1px solid var(--line); }
+    .primary { border-color: color-mix(in oklab, var(--accent) 55%, var(--line)); }
+    .primary:hover { border-color: color-mix(in oklab, var(--accent) 85%, var(--line)); }
+    .ghost { background: color-mix(in oklab, var(--panel2) 75%, transparent); }
+    .hint { font-size: 12px; color: var(--muted); line-height: 1.35; }
+    .twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Login */
+    .loginWrap {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+    .loginCard {
+      width: min(420px, 100%);
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .loginCard h1 { margin: 0 0 6px; font-size: 16px; font-weight: 650; }
+    .loginCard .sub { margin: 0 0 12px; font-size: 12px; color: var(--muted); line-height: 1.35; }
+    .loginCard .grid { display: grid; gap: 10px; }
+    .loginCard .err {
+      display: none;
+      border: 1px solid color-mix(in oklab, var(--bad) 55%, var(--line));
+      background: color-mix(in oklab, var(--bad) 10%, var(--panel));
+      color: color-mix(in oklab, var(--text) 85%, var(--bad));
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .loginCard .row2 { display:flex; gap:8px; justify-content: space-between; align-items: center; }
+    .loginCard .mini { font-size: 12px; color: var(--muted); }
+    .loginCard .actions { display:flex; gap:8px; justify-content: flex-end; margin-top: 2px; }
+    .hide { display: none !important; }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .camGrid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 登录界面 -->
+  <section id="loginScreen" class="loginWrap">
+    <div class="loginCard">
+      <div class="row" style="margin-bottom: 6px;">
+        <div>
+          <h1>校园空中交通 · 控制台</h1>
+          <div class="sub">登录后进入实时监控、座位预约与 7 路视频监控调看（本地视频演示版）。</div>
+        </div>
+        <button id="btnThemeLogin" class="ghost">浅色模式</button>
+      </div>
+
+      <div id="loginErr" class="err"></div>
+
+      <div class="grid">
+        <label>用户名
+          <input id="loginUser" type="text" placeholder="例如：admin" autocomplete="username" />
+        </label>
+        <label>密码
+          <input id="loginPass" type="password" placeholder="例如：123456" autocomplete="current-password" />
+        </label>
+
+        <div class="row2">
+          <span class="mini">演示账号：admin / 123456</span>
+          <div class="actions">
+            <button id="btnLogin" class="primary">进入系统</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主应用 -->
+  <main id="appRoot" class="hide">
+    <div class="app">
+      <header>
+        <div class="title">
+          <h1>校园空中交通 · 实时监控与座位预约</h1>
+          <div class="sub">交通载具：大型传送带 + 座位｜站点：宿舍总站 & 第一~第六教学楼｜监控：7 路（本地视频）</div>
+        </div>
+        <div class="toolbar">
+          <span class="pill"><span id="connDot" class="dot"></span><span id="connText">在线（仿真）</span></span>
+          <button id="btnTheme" class="ghost">浅色模式</button>
+          <button id="btnReserve" class="primary">座位预约</button>
+          <button id="btnPause" class="ghost">暂停仿真</button>
+          <button id="btnLogout" class="ghost">退出</button>
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <button class="tabBtn active" data-tab="ops">交通态势</button>
+        <button class="tabBtn" data-tab="cams">监控调看</button>
+      </nav>
+
+      <!-- 交通态势 -->
+      <section id="tabPanelOps" class="panel" style="grid-column: 1 / -1;">
+        <div class="hd">
+          <h2>轨道与载具位置（主环线 + 支线）</h2>
+          <div class="k">刷新周期：<span id="tickMs">500</span> ms｜剩余座位实时更新</div>
+        </div>
+        <div class="bd" style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
+          <div class="panel" style="box-shadow:none;">
+            <div class="bd">
+              <div class="mapWrap">
+                <svg viewBox="0 0 1000 625" aria-label="轨道地图">
+                  <!-- 主环线 -->
+                  <path id="trackMain"
+                    d="M 180 450
+                       C 140 310, 220 180, 370 180
+                       C 470 180, 520 120, 650 140
+                       C 820 170, 880 320, 810 430
+                       C 760 510, 640 540, 520 520
+                       C 450 505, 380 560, 290 530
+                       C 220 510, 195 500, 180 450"
+                    fill="none" stroke="var(--track)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+                  <path
+                    d="M 180 450
+                       C 140 310, 220 180, 370 180
+                       C 470 180, 520 120, 650 140
+                       C 820 170, 880 320, 810 430
+                       C 760 510, 640 540, 520 520
+                       C 450 505, 380 560, 290 530
+                       C 220 510, 195 500, 180 450"
+                    fill="none" stroke="var(--trackInner)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+                  <!-- 支线：T2 ↔ T6 -->
+                  <path id="trackBranch"
+                    d="M 395 205
+                       C 315 140, 285 105, 235 95
+                       C 180 85, 135 120, 120 165
+                       C 105 215, 125 260, 175 275
+                       C 235 295, 310 265, 360 235"
+                    fill="none" stroke="var(--track)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+                  <path
+                    d="M 395 205
+                       C 315 140, 285 105, 235 95
+                       C 180 85, 135 120, 120 165
+                       C 105 215, 125 260, 175 275
+                       C 235 295, 310 265, 360 235"
+                    fill="none" stroke="var(--trackInner)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+
+                  <!-- 站点 -->
+                  <g id="stations">
+                    <g transform="translate(205,430)">
+                      <circle r="11" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="18" y="5" fill="var(--text)" font-size="14">S 宿舍总站</text>
+                    </g>
+                    <g transform="translate(320,520)">
+                      <circle r="10" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="16" y="5" fill="var(--text)" font-size="14">T1 第一教学楼</text>
+                    </g>
+                    <g transform="translate(395,205)">
+                      <circle r="10" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="16" y="5" fill="var(--text)" font-size="14">T2 第二教学楼</text>
+                    </g>
+                    <g transform="translate(540,150)">
+                      <circle r="10" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="16" y="5" fill="var(--text)" font-size="14">T3 第三教学楼</text>
+                    </g>
+                    <g transform="translate(785,300)">
+                      <circle r="10" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="16" y="5" fill="var(--text)" font-size="14">T4 第四教学楼</text>
+                    </g>
+                    <g transform="translate(620,520)">
+                      <circle r="10" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="16" y="5" fill="var(--text)" font-size="14">T5 第五教学楼</text>
+                    </g>
+                    <g transform="translate(155,165)">
+                      <circle r="10" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></circle>
+                      <text x="16" y="5" fill="var(--text)" font-size="14">T6 第六教学楼</text>
+                    </g>
+                  </g>
+
+                  <!-- 大型传送带+座位（两组） -->
+                  <g id="belt1" class="belt">
+                    <rect class="track" x="-28" y="-14" width="56" height="28" rx="10"></rect>
+                    <rect class="top" x="-22" y="-9" width="44" height="18" rx="8"></rect>
+                    <circle class="seat" cx="-12" cy="0" r="4"></circle>
+                    <circle class="seat" cx="0" cy="0" r="4"></circle>
+                    <circle class="seat" cx="12" cy="0" r="4"></circle>
+                    <circle class="core" cx="0" cy="0" r="2"></circle>
+                  </g>
+                  <g id="belt2" class="belt">
+                    <rect class="track" x="-28" y="-14" width="56" height="28" rx="10"></rect>
+                    <rect class="top" x="-22" y="-9" width="44" height="18" rx="8"></rect>
+                    <circle class="seat" cx="-12" cy="0" r="4"></circle>
+                    <circle class="seat" cx="0" cy="0" r="4"></circle>
+                    <circle class="seat" cx="12" cy="0" r="4"></circle>
+                    <circle class="core" cx="0" cy="0" r="2"></circle>
+                  </g>
+
+                  <line id="vec1" x1="0" y1="0" x2="0" y2="0"
+                        stroke="color-mix(in oklab, var(--accent) 70%, white)" stroke-width="3" opacity="0.9" />
+                  <line id="vec2" x1="0" y1="0" x2="0" y2="0"
+                        stroke="color-mix(in oklab, var(--ok) 70%, white)" stroke-width="3" opacity="0.9" />
+                </svg>
+
+                <div class="legend">
+                  <div class="tag"><strong>蓝</strong> 传送带-01（主环线/可分流支线）</div>
+                  <div class="tag"><strong>绿</strong> 传送带-02（主环线/可分流支线）</div>
+                  <div class="tag">支线：T2 ↔ T6</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside style="display:grid; gap:10px;">
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div style="font-weight:650;">传送带-01</div>
+                  <div class="k">下一站：<span id="b1Next">—</span></div>
+                </div>
+                <span class="status" id="b1Status"><span class="sDot"></span><span id="b1StatusText">运行中</span></span>
+              </div>
+              <div style="height:8px;"></div>
+              <div class="row"><div class="k">速度</div><div class="v"><span id="b1Speed">—</span> m/s</div></div>
+              <div class="row"><div class="k">载客</div><div class="v"><span id="b1Pax">—</span> / <span id="b1Cap">—</span></div></div>
+              <div class="row"><div class="k">剩余座位</div><div class="v"><span id="b1Seats">—</span></div></div>
+              <div class="row"><div class="k">延误</div><div class="v"><span id="b1Delay">—</span> s</div></div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div style="font-weight:650;">传送带-02</div>
+                  <div class="k">下一站：<span id="b2Next">—</span></div>
+                </div>
+                <span class="status" id="b2Status"><span class="sDot"></span><span id="b2StatusText">运行中</span></span>
+              </div>
+              <div style="height:8px;"></div>
+              <div class="row"><div class="k">速度</div><div class="v"><span id="b2Speed">—</span> m/s</div></div>
+              <div class="row"><div class="k">载客</div><div class="v"><span id="b2Pax">—</span> / <span id="b2Cap">—</span></div></div>
+              <div class="row"><div class="k">剩余座位</div><div class="v"><span id="b2Seats">—</span></div></div>
+              <div class="row"><div class="k">延误</div><div class="v"><span id="b2Delay">—</span> s</div></div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div style="font-weight:650;">线路健康</div>
+                <span class="status" id="lineStatus"><span class="sDot"></span><span id="lineStatusText">良好</span></span>
+              </div>
+              <div style="height:8px;"></div>
+              <div class="row"><div class="k">主环线</div><div class="v">S → T1 → T2 → T3 → T4 → T5 → S</div></div>
+              <div class="row"><div class="k">支线</div><div class="v">T2 ↔ T6</div></div>
+              <div class="row"><div class="k">告警</div><div class="v" id="alarms">0</div></div>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div style="font-weight:650;">事件日志</div>
+                <div class="k">保留最近 30 条</div>
+              </div>
+              <div style="height:10px;"></div>
+              <div class="log" id="log"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 监控调看 -->
+      <section id="tabPanelCams" class="panel hide" style="grid-column: 1 / -1;">
+        <div class="hd">
+          <h2>监控调看（7 路本地视频）</h2>
+          <div class="k">选择摄像头：<select id="camSelect"></select></div>
+        </div>
+        <div class="bd">
+          <div class="camGrid">
+            <div class="camView">
+              <!-- 真正的视频播放器 -->
+              <video id="camVideo" autoplay muted playsinline loop></video>
+
+              <!-- 播放失败提示 -->
+              <div class="camErr" id="camErr">
+                <div class="box">
+                  <div class="t">视频无法播放</div>
+                  <div class="m" id="camErrMsg">
+                    请确认 cam01.mp4 ~ cam07.mp4 与本 HTML 在同一目录，并使用本地服务器方式打开（Live Server 或 python http.server）。
+                  </div>
+                </div>
+              </div>
+
+              <!-- HUD -->
+              <div class="camHud">
+                <div class="top">
+                  <div class="label">
+                    <span class="dot" id="camDot"></span>
+                    <span id="camTitle">CAM-01</span>
+                  </div>
+                  <div class="meta">
+                    <span id="camWhere">—</span>
+                    <span>FPS: <span id="camFps">—</span></span>
+                    <span>延迟: <span id="camLag">—</span> ms</span>
+                  </div>
+                </div>
+                <div class="meta" style="align-self:flex-end;">
+                  <span>时间：<span id="camTime">—</span></span>
+                </div>
+              </div>
+              <div class="camBadge" id="camSrcBadge">源：cam01.mp4</div>
+            </div>
+
+            <div class="card">
+              <div style="font-weight:650; margin-bottom:8px;">监控状态</div>
+              <div class="row"><div class="k">当前通道</div><div class="v" id="camChan">—</div></div>
+              <div class="row"><div class="k">位置</div><div class="v" id="camPos">—</div></div>
+              <div class="row"><div class="k">画面质量</div><div class="v" id="camQ">—</div></div>
+              <div class="row"><div class="k">异常检测</div><div class="v" id="camAI">—</div></div>
+              <div style="height:10px;"></div>
+              <div class="hint">
+                本版本：用本地 mp4 作为 7 路监控演示源；切换摄像头时替换 video.src。
+              </div>
+            </div>
+
+            <div class="card" style="grid-column: 1 / -1;">
+              <div style="font-weight:650; margin-bottom:8px;">7 路监控列表</div>
+              <div id="camList" style="display:grid; gap:8px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 座位预约弹窗 -->
+  <div class="modalBackdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-label="座位预约窗口">
+    <div class="modal">
+      <div class="mh">
+        <h3>座位预约</h3>
+        <button id="btnClose" class="ghost">关闭</button>
+      </div>
+      <div class="mb">
+        <div class="hint">
+          演示逻辑：提交预约后，会优先在“剩余座位足够”的传送带上预留座位，并在下一次到站时确认上客；若涉及第六教学楼（T6），将于第二教学楼（T2）分流进入支线。
+        </div>
+        <div class="twoCol">
+          <label>上车站点
+            <select id="fromStation"></select>
+          </label>
+          <label>目的站点
+            <select id="toStation"></select>
+          </label>
+        </div>
+        <div class="twoCol">
+          <label>预约座位数
+            <input id="seatsNeed" type="number" min="1" max="20" value="1" />
+          </label>
+          <label>优先级
+            <select id="priority">
+              <option value="normal">普通</option>
+              <option value="high">高（赶课/换乘）</option>
+              <option value="access">无障碍</option>
+            </select>
+          </label>
+        </div>
+        <label>备注（可选）
+          <input id="note" type="text" placeholder="例如：无障碍/携带大件物品" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="btnSubmit" class="primary">提交预约</button>
+        <button id="btnCancel" class="ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== 主题 ===== */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      const text = (theme === "dark") ? "浅色模式" : "深色模式";
+      const btnA = document.getElementById("btnTheme");
+      const btnB = document.getElementById("btnThemeLogin");
+      if (btnA) btnA.textContent = text;
+      if (btnB) btnB.textContent = text;
+      try { localStorage.setItem("skyrail_theme", theme); } catch {}
+    }
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute("data-theme") || "dark";
+      applyTheme(cur === "dark" ? "light" : "dark");
+    }
+
+    /* ===== 登录（演示） ===== */
+    const LOGIN_USER = "admin";
+    const LOGIN_PASS = "123456";
+    const loginScreen = document.getElementById("loginScreen");
+    const appRoot = document.getElementById("appRoot");
+    const loginErr = document.getElementById("loginErr");
+
+    function showLoginError(msg){ loginErr.style.display="block"; loginErr.textContent=msg; }
+    function clearLoginError(){ loginErr.style.display="none"; loginErr.textContent=""; }
+    function setLoggedIn(on){
+      if (on){ loginScreen.classList.add("hide"); appRoot.classList.remove("hide"); }
+      else { appRoot.classList.add("hide"); loginScreen.classList.remove("hide"); }
+    }
+
+    document.getElementById("btnThemeLogin").addEventListener("click", toggleTheme);
+    document.getElementById("btnLogin").addEventListener("click", ()=>{
+      const u = document.getElementById("loginUser").value.trim();
+      const p = document.getElementById("loginPass").value;
+      clearLoginError();
+      if (!u || !p) return showLoginError("请输入用户名与密码。");
+      if (u === LOGIN_USER && p === LOGIN_PASS) {
+        setLoggedIn(true);
+        addLog("登录", `用户 ${u} 已进入系统`);
+      } else {
+        showLoginError("用户名或密码错误（演示账号：admin / 123456）。");
+      }
+    });
+    document.getElementById("loginPass").addEventListener("keydown", (e)=>{ if(e.key==="Enter") document.getElementById("btnLogin").click(); });
+    document.getElementById("loginUser").addEventListener("keydown", (e)=>{ if(e.key==="Enter") document.getElementById("btnLogin").click(); });
+
+    /* ===== 数据：站点/线路 ===== */
+    const stations = [
+      { id:"S",  name:"宿舍总站" },
+      { id:"T1", name:"第一教学楼" },
+      { id:"T2", name:"第二教学楼" },
+      { id:"T3", name:"第三教学楼" },
+      { id:"T4", name:"第四教学楼" },
+      { id:"T5", name:"第五教学楼" },
+      { id:"T6", name:"第六教学楼" },
+    ];
+    const mainLoopOrder = ["S","T1","T2","T3","T4","T5"];
+    const mainMarks = { S:0.10, T1:0.86, T2:0.25, T3:0.42, T4:0.60, T5:0.74 };
+    const branchMarks = { T2:0.00, T6:0.72 };
+
+    const state = {
+      connected:true,
+      paused:false,
+      tickMs:500,
+      alarms:0,
+      reservations:[],
+      belts:{
+        B1:{ id:"传送带-01", mode:"main", t:0.14, u:0.00, vMain:0.020, vBranch:0.020, cap:48, pax:18, delay:0, status:"ok", next:"T1" },
+        B2:{ id:"传送带-02", mode:"main", t:0.64, u:0.00, vMain:0.017, vBranch:0.018, cap:64, pax:31, delay:0, status:"ok", next:"T5" },
+      }
+    };
+
+    /* ===== SVG 路径 ===== */
+    const trackMain = document.getElementById("trackMain");
+    const trackBranch = document.getElementById("trackBranch");
+    const lenMain = trackMain.getTotalLength();
+    const lenBranch = trackBranch.getTotalLength();
+
+    function clamp(x,lo,hi){ return Math.max(lo, Math.min(hi,x)); }
+    function rand(a,b){ return a + Math.random()*(b-a); }
+
+    function pointOnMain(t){
+      const p = trackMain.getPointAtLength((t%1)*lenMain);
+      return {x:p.x,y:p.y};
+    }
+    function tangentOnMain(t){
+      const eps=0.002;
+      const p1=pointOnMain(Math.max(0,t-eps));
+      const p2=pointOnMain(Math.min(1,t+eps));
+      const dx=p2.x-p1.x, dy=p2.y-p1.y;
+      const mag=Math.max(1e-6, Math.hypot(dx,dy));
+      return {x:dx/mag,y:dy/mag};
+    }
+    function pointOnBranch(u){
+      const p = trackBranch.getPointAtLength(clamp(u,0,1)*lenBranch);
+      return {x:p.x,y:p.y};
+    }
+    function tangentOnBranch(u){
+      const eps=0.004;
+      const p1=pointOnBranch(Math.max(0,u-eps));
+      const p2=pointOnBranch(Math.min(1,u+eps));
+      const dx=p2.x-p1.x, dy=p2.y-p1.y;
+      const mag=Math.max(1e-6, Math.hypot(dx,dy));
+      return {x:dx/mag,y:dy/mag};
+    }
+
+    function stationLabel(id){
+      const s=stations.find(x=>x.id===id);
+      return s?`${s.id} ${s.name}`:id;
+    }
+    function nextInMainLoop(id){
+      const idx=mainLoopOrder.indexOf(id);
+      return idx===-1?"S":mainLoopOrder[(idx+1)%mainLoopOrder.length];
+    }
+    function nearestMainStationId(t){
+      let best="S", bestD=Infinity;
+      for (const [id,mt] of Object.entries(mainMarks)){
+        const d=Math.min(Math.abs(t-mt), 1-Math.abs(t-mt));
+        if(d<bestD){bestD=d;best=id;}
+      }
+      return best;
+    }
+    function isNearMainStation(t,id,thr=0.016){
+      const mt=mainMarks[id];
+      const d=Math.min(Math.abs(t-mt), 1-Math.abs(t-mt));
+      return d<thr;
+    }
+    function isNearBranchStation(u,id,thr=0.03){
+      const mu=branchMarks[id];
+      return Math.abs(u-mu)<thr;
+    }
+    function priorityLabel(p){
+      return p==="high"?"高":(p==="access"?"无障碍":"普通");
+    }
+
+    /* ===== UI 快捷引用 & 日志 ===== */
+    const el = (id)=>document.getElementById(id);
+    const connDot = el("connDot");
+    const connText = el("connText");
+    const btnPause = el("btnPause");
+    const btnTheme = el("btnTheme");
+    const btnLogout = el("btnLogout");
+
+    const belt1 = el("belt1");
+    const belt2 = el("belt2");
+    const vec1 = el("vec1");
+    const vec2 = el("vec2");
+    const logEl = el("log");
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function addLog(title,msg){
+      const now=new Date();
+      const item=document.createElement("div");
+      item.className="logItem";
+      item.innerHTML=`
+        <div class="t">${escapeHtml(title)}</div>
+        <div class="m">${escapeHtml(msg)}</div>
+        <div class="ts">${now.toLocaleString()}</div>
+      `;
+      logEl.prepend(item);
+      while(logEl.children.length>30) logEl.removeChild(logEl.lastChild);
+    }
+
+    /* ===== 传送带渲染 & 状态 ===== */
+    function placeOnMain(groupEl, vecEl, t){
+      const p=pointOnMain(t);
+      const tan=tangentOnMain(t);
+      groupEl.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${Math.atan2(tan.y,tan.x)*180/Math.PI})`);
+      vecEl.setAttribute("x1", p.x); vecEl.setAttribute("y1", p.y);
+      vecEl.setAttribute("x2", (p.x+tan.x*40).toFixed(2));
+      vecEl.setAttribute("y2", (p.y+tan.y*40).toFixed(2));
+    }
+    function placeOnBranch(groupEl, vecEl, u){
+      const p=pointOnBranch(u);
+      const tan=tangentOnBranch(u);
+      groupEl.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${Math.atan2(tan.y,tan.x)*180/Math.PI})`);
+      vecEl.setAttribute("x1", p.x); vecEl.setAttribute("y1", p.y);
+      vecEl.setAttribute("x2", (p.x+tan.x*36).toFixed(2));
+      vecEl.setAttribute("y2", (p.y+tan.y*36).toFixed(2));
+    }
+
+    function setStatusBadge(badgeEl,textEl,level){
+      badgeEl.classList.remove("warn","bad");
+      if(level==="warn") badgeEl.classList.add("warn");
+      if(level==="bad") badgeEl.classList.add("bad");
+      textEl.textContent = level==="ok"?"运行中":(level==="warn"?"注意":"故障");
+    }
+    function seatsAvail(B){ return Math.max(0, B.cap - B.pax); }
+
+    function updateBeltCard(prefix,B){
+      const dist=(B.mode==="main"?lenMain:lenBranch);
+      const v=(B.mode==="main"?B.vMain:B.vBranch);
+      const speed=(v*dist/(state.tickMs/1000));
+
+      el(prefix+"Speed").textContent=speed.toFixed(1);
+      el(prefix+"Pax").textContent=B.pax.toFixed(0);
+      el(prefix+"Cap").textContent=B.cap.toFixed(0);
+      el(prefix+"Seats").textContent=seatsAvail(B).toFixed(0);
+      el(prefix+"Delay").textContent=B.delay.toFixed(0);
+      el(prefix+"Next").textContent=stationLabel(B.next);
+
+      setStatusBadge(el(prefix+"Status"), el(prefix+"StatusText"), B.status);
+    }
+
+    function updateUI(){
+      el("tickMs").textContent=state.tickMs;
+      if(state.connected){
+        connDot.classList.remove("off");
+        connText.textContent=state.paused?"在线（已暂停）":"在线（仿真）";
+      }else{
+        connDot.classList.add("off");
+        connText.textContent="离线";
+      }
+
+      updateBeltCard("b1", state.belts.B1);
+      updateBeltCard("b2", state.belts.B2);
+
+      el("alarms").textContent=state.alarms;
+      const lineLevel = state.alarms===0?"ok":(state.alarms<=2?"warn":"bad");
+      el("lineStatusText").textContent = lineLevel==="ok"?"良好":(lineLevel==="warn"?"有告警":"风险");
+      el("lineStatus").classList.remove("warn","bad");
+      if(lineLevel==="warn") el("lineStatus").classList.add("warn");
+      if(lineLevel==="bad") el("lineStatus").classList.add("bad");
+    }
+
+    /* ===== 预约分配逻辑 ===== */
+    function assignReservation(req){
+      const belts = Object.values(state.belts);
+      const candidates = belts.filter(b => seatsAvail(b) >= req.seats);
+      if(!candidates.length) return null;
+
+      const needsBranch = (req.from==="T6" || req.to==="T6");
+      function score(b){
+        if(needsBranch){
+          const tNow = (b.mode==="main"?b.t:mainMarks.T2);
+          const d = Math.min(Math.abs(tNow-mainMarks.T2), 1-Math.abs(tNow-mainMarks.T2));
+          return d;
+        } else {
+          const pickT = mainMarks[req.from] ?? mainMarks.S;
+          const tNow = (b.mode==="main"?b.t:mainMarks.T2);
+          const d = Math.min(Math.abs(tNow-pickT), 1-Math.abs(tNow-pickT));
+          return d;
+        }
+      }
+      candidates.sort((a,b)=>score(a)-score(b));
+      return candidates[0].id;
+    }
+
+    /* ===== 到站/分流 ===== */
+    let lastDock = { B1:null, B2:null };
+
+    function dockMain(key, stationId){
+      const B = state.belts[key];
+
+      const off = Math.round(rand(0, Math.min(B.pax, 10)));
+      const on  = Math.round(rand(0, 12));
+      B.pax = clamp(B.pax - off + on, 0, B.cap);
+      B.delay = clamp(B.delay + rand(-3, 6), 0, 90);
+
+      if(state.reservations.length){
+        const idx = state.reservations.findIndex(r => r.from===stationId && r.assignedTo===B.id);
+        if(idx !== -1){
+          const r = state.reservations.splice(idx, 1)[0];
+          B.pax = clamp(B.pax + r.seats, 0, B.cap);
+          addLog("预约确认上客", `${B.id} 在 ${stationLabel(r.from)} 上客 ${r.seats} 人，前往 ${stationLabel(r.to)}（剩余座位：${seatsAvail(B)}）`);
+
+          if((r.from==="T6" || r.to==="T6") && stationId==="T2"){
+            B.mode="branch";
+            B.u=branchMarks.T2;
+            B.next="T6";
+            addLog("支线分流", `${B.id} 在 ${stationLabel("T2")} 分流进入支线，前往 ${stationLabel("T6")}`);
+            return;
+          }
+        }
+      }
+
+      const pendingBranch = state.reservations.find(r => (r.from==="T6"||r.to==="T6") && r.assignedTo===B.id);
+      if(pendingBranch && stationId==="T2"){
+        B.mode="branch";
+        B.u=branchMarks.T2;
+        B.next="T6";
+        addLog("支线分流", `${B.id} 在 ${stationLabel("T2")} 分流进入支线（存在到/来自T6的预约任务）`);
+        return;
+      }
+
+      B.next = nextInMainLoop(stationId);
+      addLog("到站", `${B.id} 抵达 ${stationLabel(stationId)}，下一站 ${stationLabel(B.next)}（剩余座位：${seatsAvail(B)}）`);
+    }
+
+    function dockBranch(key, stationId){
+      const B=state.belts[key];
+
+      if(stationId==="T6"){
+        const off = Math.round(rand(0, Math.min(B.pax, 8)));
+        const on  = Math.round(rand(0, 10));
+        B.pax = clamp(B.pax - off + on, 0, B.cap);
+        B.delay = clamp(B.delay + rand(-2, 5), 0, 90);
+        addLog("到站（支线）", `${B.id} 抵达 ${stationLabel("T6")}，将返回 ${stationLabel("T2")}（剩余座位：${seatsAvail(B)}）`);
+        B.next="T2";
+        return;
+      }
+
+      if(stationId==="T2"){
+        B.mode="main";
+        B.t=mainMarks.T2;
+        B.next=nextInMainLoop("T2");
+        addLog("返回主环线", `${B.id} 已回到 ${stationLabel("T2")}，继续主环线至 ${stationLabel(B.next)}`);
+      }
+    }
+
+    function maybeDock(key){
+      const B=state.belts[key];
+      if(B.mode==="main"){
+        const near=nearestMainStationId(B.t);
+        if(!isNearMainStation(B.t, near)) return;
+        if(lastDock[key]===`main:${near}`) return;
+        lastDock[key]=`main:${near}`;
+        dockMain(key, near);
+      }else{
+        const near = isNearBranchStation(B.u,"T6") ? "T6" : (isNearBranchStation(B.u,"T2") ? "T2" : null);
+        if(!near) return;
+        if(lastDock[key]===`branch:${near}`) return;
+        lastDock[key]=`branch:${near}`;
+        dockBranch(key, near);
+      }
+    }
+
+    /* ===== 摄像头：本地 mp4 视频源 ===== */
+    const cameras = [
+      { id:"CAM-01", where:"S 宿舍总站 · 上行平台", pos:"S站上行端", quality:"1080p", ai:"客流/跌倒检测", src:"cam01.mp4" },
+      { id:"CAM-02", where:"T1 第一教学楼 · 出入口", pos:"T1东侧", quality:"1080p", ai:"拥堵检测", src:"cam02.mp4" },
+      { id:"CAM-03", where:"T2 第二教学楼 · 分流点", pos:"T2分叉口", quality:"1440p", ai:"分流异常/逆行", src:"cam03.mp4" },
+      { id:"CAM-04", where:"T3 第三教学楼 · 站台", pos:"T3站台", quality:"1080p", ai:"客流统计", src:"cam04.mp4" },
+      { id:"CAM-05", where:"T4 第四教学楼 · 高架段", pos:"T4外环高架", quality:"1440p", ai:"障碍物检测", src:"cam05.mp4" },
+      { id:"CAM-06", where:"T5 第五教学楼 · 站台", pos:"T5站台", quality:"1080p", ai:"排队检测", src:"cam06.mp4" },
+      { id:"CAM-07", where:"T6 第六教学楼 · 支线端", pos:"T6支线端", quality:"1080p", ai:"人群聚集/异常停留", src:"cam07.mp4" },
+    ];
+
+    const camSelect = el("camSelect");
+    const camList = el("camList");
+    const camVideo = el("camVideo");
+    const camErr = el("camErr");
+    const camErrMsg = el("camErrMsg");
+    const camSrcBadge = el("camSrcBadge");
+
+    let camRuntime = { fps:24, lag:80, online:true };
+
+    /* ==== 视频接口（你以后可以把 src 换成网络/HLS 地址） ==== */
+    function setVideoSource(url) {
+      camErr.style.display = "none";
+      camVideo.src = url;
+      camVideo.load();
+      camVideo.play().then(()=>{
+        camErr.style.display = "none";
+      }).catch(()=>{
+        camErr.style.display = "grid";
+      });
+      camSrcBadge.textContent = `源：${url}`;
+    }
+
+    function updateCamHUD(){
+      camRuntime.fps = Math.round(clamp(camRuntime.fps + rand(-2, 2), 18, 30));
+      camRuntime.lag = Math.round(clamp(camRuntime.lag + rand(-20, 30), 40, 220));
+      if (Math.random() < 0.01) camRuntime.online = !camRuntime.online;
+
+      el("camFps").textContent = String(camRuntime.fps);
+      el("camLag").textContent = String(camRuntime.lag);
+      el("camTime").textContent = new Date().toLocaleString();
+      el("camDot").classList.toggle("off", !camRuntime.online);
+    }
+
+    function renderCam(camId){
+      const c = cameras.find(x=>x.id===camId) || cameras[0];
+      el("camTitle").textContent = c.id;
+      el("camWhere").textContent = c.where;
+      el("camChan").textContent = c.id;
+      el("camPos").textContent = c.pos;
+      el("camQ").textContent = c.quality;
+      el("camAI").textContent = c.ai;
+
+      setVideoSource(c.src);
+      updateCamHUD();
+      addLog("监控调看", `切换至 ${c.id}（${c.where}），视频源：${c.src}`);
+    }
+
+    function initCams(){
+      camSelect.innerHTML = "";
+      cameras.forEach(c=>{
+        const opt=document.createElement("option");
+        opt.value=c.id;
+        opt.textContent=`${c.id}｜${c.where}`;
+        camSelect.appendChild(opt);
+      });
+      camSelect.value="CAM-01";
+      camSelect.addEventListener("change", ()=>renderCam(camSelect.value));
+
+      camList.innerHTML="";
+      cameras.forEach(c=>{
+        const row=document.createElement("div");
+        row.className="card";
+        row.style.padding="10px";
+        row.innerHTML=`
+          <div class="row">
+            <div style="font-weight:650;">${escapeHtml(c.id)}</div>
+            <button class="ghost" data-cam="${escapeHtml(c.id)}">调看</button>
+          </div>
+          <div style="height:6px;"></div>
+          <div class="row"><div class="k">位置</div><div class="v">${escapeHtml(c.where)}</div></div>
+          <div class="row"><div class="k">文件</div><div class="v">${escapeHtml(c.src)}</div></div>
+          <div class="row"><div class="k">AI</div><div class="v">${escapeHtml(c.ai)}</div></div>
+        `;
+        camList.appendChild(row);
+        row.querySelector("button").addEventListener("click", ()=>{
+          setActiveTab("cams");
+          camSelect.value=c.id;
+          renderCam(c.id);
+        });
+      });
+
+      camVideo.addEventListener("error", ()=>{
+        camErr.style.display = "grid";
+        const cur = cameras.find(x=>x.id===camSelect.value) || cameras[0];
+        camErrMsg.textContent =
+          `无法加载 ${cur.src}。请确认文件存在且与 HTML 在同一目录，并用本地服务器方式访问。`;
+      });
+
+      renderCam("CAM-01");
+    }
+
+    /* ===== Tick 仿真 ===== */
+    function tick(){
+      if(!state.connected || state.paused) return;
+
+      if(Math.random()<0.03){
+        state.alarms = clamp(state.alarms + (Math.random()<0.65?1:-1), 0, 5);
+        if(state.alarms>0) addLog("线路告警", `检测到 ${state.alarms} 个告警（示例：风速/间距/供电波动）`);
+      }
+      const penalty = state.alarms>=3?0.55:(state.alarms>=1?0.80:1.0);
+
+      for(const key of ["B1","B2"]){
+        const B=state.belts[key];
+        B.status = state.alarms>=4?"warn":"ok";
+        if(Math.random()<0.004){
+          B.status="bad";
+          addLog("载具故障", `${B.id} 上报故障（示例：传感器/驱动），建议人工确认`);
+        }
+
+        if(B.mode==="main"){
+          B.t = (B.t + B.vMain*penalty) % 1;
+        }else{
+          const dir = (B.next==="T6") ? +1 : -1;
+          B.u = clamp(B.u + dir*B.vBranch*(lenMain/lenBranch)*penalty, 0, 1);
+          if(B.next==="T6" && B.u>0.72) B.u=0.72;
+          if(B.next==="T2" && B.u<0.00) B.u=0.00;
+        }
+
+        if(key==="B1") (B.mode==="main") ? placeOnMain(belt1, vec1, B.t) : placeOnBranch(belt1, vec1, B.u);
+        if(key==="B2") (B.mode==="main") ? placeOnMain(belt2, vec2, B.t) : placeOnBranch(belt2, vec2, B.u);
+
+        maybeDock(key);
+      }
+
+      updateCamHUD();
+      updateUI();
+    }
+
+    /* ===== 控制：暂停/主题/退出 ===== */
+    btnPause.addEventListener("click", ()=>{
+      state.paused=!state.paused;
+      btnPause.textContent=state.paused?"恢复仿真":"暂停仿真";
+      updateUI();
+      addLog(state.paused?"仿真暂停":"仿真恢复", state.paused?"已暂停实时更新（演示）":"已恢复实时更新（演示）");
+    });
+    btnTheme.addEventListener("click", toggleTheme);
+    btnLogout.addEventListener("click", ()=>{
+      setLoggedIn(false);
+      addLog("退出", "已退出系统");
+    });
+
+    /* ===== Tab 切换 ===== */
+    function setActiveTab(tab){
+      document.querySelectorAll(".tabBtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+      el("tabPanelOps").classList.toggle("hide", tab!=="ops");
+      el("tabPanelCams").classList.toggle("hide", tab!=="cams");
+    }
+    document.querySelectorAll(".tabBtn").forEach(b=>b.addEventListener("click", ()=>setActiveTab(b.dataset.tab)));
+
+    /* ===== 座位预约弹窗 ===== */
+    const modal = el("modalBackdrop");
+    const btnReserve = el("btnReserve");
+    const btnClose = el("btnClose");
+    const btnCancel = el("btnCancel");
+    const btnSubmit = el("btnSubmit");
+
+    function openModal(){ modal.style.display="flex"; }
+    function closeModal(){ modal.style.display="none"; }
+
+    btnReserve.addEventListener("click", openModal);
+    btnClose.addEventListener("click", closeModal);
+    btnCancel.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e)=>{ if(e.target===modal) closeModal(); });
+
+    function fillStationSelects(){
+      const fromSel=el("fromStation");
+      const toSel=el("toStation");
+      fromSel.innerHTML=""; toSel.innerHTML="";
+      for(const s of stations){
+        const o1=document.createElement("option");
+        o1.value=s.id; o1.textContent=`${s.id} ${s.name}`;
+        fromSel.appendChild(o1);
+        const o2=document.createElement("option");
+        o2.value=s.id; o2.textContent=`${s.id} ${s.name}`;
+        toSel.appendChild(o2);
+      }
+      fromSel.value="S";
+      toSel.value="T3";
+    }
+
+    btnSubmit.addEventListener("click", ()=>{
+      const from=el("fromStation").value;
+      const to=el("toStation").value;
+      const seats=parseInt(el("seatsNeed").value||"1",10);
+      const priority=el("priority").value;
+      const note=el("note").value.trim();
+
+      if(from===to){
+        addLog("预约失败","上车站点与目的站点不能相同");
+        closeModal(); return;
+      }
+
+      const req={
+        id: crypto.randomUUID?.() || String(Date.now()),
+        from,to,
+        seats: clamp(seats,1,20),
+        priority, note,
+        ts: Date.now(),
+        assignedTo: null
+      };
+
+      const assigned=assignReservation(req);
+      if(!assigned){
+        addLog("预约失败", `当前无足够剩余座位可满足 ${req.seats} 个座位预约`);
+        closeModal(); return;
+      }
+      req.assignedTo=assigned;
+      state.reservations.push(req);
+      addLog("预约已提交", `预约 ${req.seats} 座位：${stationLabel(from)} → ${stationLabel(to)}，已分配至 ${assigned}（优先级：${priorityLabel(priority)}）`);
+      closeModal();
+    });
+
+    /* ===== 初始化 ===== */
+    (function init(){
+      let theme="dark";
+      try { theme = localStorage.getItem("skyrail_theme") || "dark"; } catch {}
+      applyTheme(theme);
+
+      fillStationSelects();
+      initCams();
+
+      state.belts.B1.next = nextInMainLoop(nearestMainStationId(state.belts.B1.t));
+      state.belts.B2.next = nextInMainLoop(nearestMainStationId(state.belts.B2.t));
+
+      placeOnMain(belt1, vec1, state.belts.B1.t);
+      placeOnMain(belt2, vec2, state.belts.B2.t);
+
+      addLog("系统启动", "控制台已就绪（本地仿真数据 + 本地视频监控源 cam01.mp4~cam07.mp4）。");
+      updateUI();
+
+      setInterval(tick, state.tickMs);
+      setLoggedIn(false);
+    })();
+  </script>
+</body>
+</html>
