@@ -21,6 +21,10 @@
       --btnA: #1b2636;
       --btnB: #0f1a29;
       --shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+      /* ✅ 登录背景图：默认读取同目录 login-bg.jpg
+         你只要替换该文件即可换背景（无需改代码） */
+      --login-bg: url("login-bg.jpg");
     }
     [data-theme="light"] {
       --bg: #f6f7fb;
@@ -367,13 +371,30 @@
       display: grid;
       place-items: center;
       padding: 18px;
+
+      /* ✅ 登录背景图：图片 + 遮罩（保证文字可读） */
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.70)),
+        var(--login-bg);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
+    [data-theme="light"] .loginWrap {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.70)),
+        var(--login-bg);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
     .loginCard {
       width: min(420px, 100%);
       padding: 14px;
       border-radius: 16px;
       border: 1px solid var(--line);
-      background: var(--panel);
+      background: color-mix(in oklab, var(--panel) 92%, transparent);
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
     }
@@ -432,6 +453,18 @@
     .songSub { font-size:12px; color: var(--muted); }
     .songActions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
     .miniBtn { padding: 7px 9px; font-size: 12px; border-radius: 10px; }
+
+    /* Recharge */
+    .okBox{
+      display:none;
+      border: 1px solid color-mix(in oklab, var(--ok) 55%, var(--line));
+      background: color-mix(in oklab, var(--ok) 10%, var(--panel));
+      color: color-mix(in oklab, var(--text) 90%, var(--ok));
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
 
     @media (max-width: 980px) {
       .app { grid-template-columns: 1fr; }
@@ -498,6 +531,7 @@
           <button id="btnReserve" class="primary">座位预约</button>
           <button id="btnSeatStatus" class="ghost">座位情况</button>
           <button id="btnSong" class="ghost">点歌</button>
+          <button id="btnRecharge" class="ghost">校外人员充值</button>
           <button id="btnPause" class="ghost">暂停仿真</button>
           <button id="btnViewLog" class="ghost">事件日志</button>
         </div>
@@ -611,10 +645,7 @@
           <aside style="display:grid; gap:10px;">
             <div class="card">
               <div class="row">
-                <div>
-                  <div style="font-weight:650;">传送带-01</div>
-                  <div class="k">下一站：<span id="b1Next">—</span></div>
-                </div>
+                <div style="font-weight:650;">传送带-01</div>
                 <span class="status" id="b1Status"><span class="sDot"></span><span id="b1StatusText">运行中</span></span>
               </div>
               <div style="height:8px;"></div>
@@ -626,10 +657,7 @@
 
             <div class="card">
               <div class="row">
-                <div>
-                  <div style="font-weight:650;">传送带-02</div>
-                  <div class="k">下一站：<span id="b2Next">—</span></div>
-                </div>
+                <div style="font-weight:650;">传送带-02</div>
                 <span class="status" id="b2Status"><span class="sDot"></span><span id="b2StatusText">运行中</span></span>
               </div>
               <div style="height:8px;"></div>
@@ -641,10 +669,7 @@
 
             <div class="card">
               <div class="row">
-                <div>
-                  <div style="font-weight:650;">传送带-03</div>
-                  <div class="k">下一站：<span id="b3Next">—</span></div>
-                </div>
+                <div style="font-weight:650;">传送带-03</div>
                 <span class="status" id="b3Status"><span class="sDot"></span><span id="b3StatusText">运行中</span></span>
               </div>
               <div style="height:8px;"></div>
@@ -656,10 +681,7 @@
 
             <div class="card">
               <div class="row">
-                <div>
-                  <div style="font-weight:650;">传送带-04</div>
-                  <div class="k">下一站：<span id="b4Next">—</span></div>
-                </div>
+                <div style="font-weight:650;">传送带-04</div>
                 <span class="status" id="b4Status"><span class="sDot"></span><span id="b4StatusText">运行中</span></span>
               </div>
               <div style="height:8px;"></div>
@@ -890,6 +912,63 @@
       </div>
       <div class="actions">
         <button id="btnSongClose2" class="primary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 校外人员充值弹窗 -->
+  <div class="modalBackdrop" id="rechargeModalBackdrop" role="dialog" aria-modal="true" aria-label="校外人员充值窗口">
+    <div class="modal" style="width:min(760px,100%);">
+      <div class="mh">
+        <h3>校外人员充值</h3>
+        <button id="btnRechargeClose" class="ghost">关闭</button>
+      </div>
+      <div class="mb">
+        <div class="hint">
+          演示界面：填写信息与金额后提交，系统记录一条“充值成功”日志（不对接真实支付）。
+        </div>
+
+        <div id="rechargeOk" class="okBox"></div>
+
+        <div class="twoCol">
+          <label>姓名
+            <input id="rcName" type="text" placeholder="例如：张三" />
+          </label>
+          <label>联系方式
+            <input id="rcPhone" type="text" placeholder="例如：138xxxx8888" />
+          </label>
+        </div>
+
+        <div class="twoCol">
+          <label>证件号（可选）
+            <input id="rcId" type="text" placeholder="身份证/护照号" />
+          </label>
+          <label>访客编号（可选）
+            <input id="rcVisitorNo" type="text" placeholder="例如：V-2025-001" />
+          </label>
+        </div>
+
+        <div class="twoCol">
+          <label>充值金额（元）
+            <input id="rcAmount" type="number" min="1" step="1" value="20" />
+          </label>
+          <label>支付方式（演示）
+            <select id="rcPay">
+              <option value="wechat">微信</option>
+              <option value="alipay">支付宝</option>
+              <option value="bank">银行卡</option>
+              <option value="cash">现金</option>
+            </select>
+          </label>
+        </div>
+
+        <label>备注（可选）
+          <input id="rcNote" type="text" placeholder="例如：团体访客/临时卡" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="btnRechargeSubmit" class="primary">确认充值</button>
+        <button id="btnRechargeCancel" class="ghost">取消</button>
       </div>
     </div>
   </div>
@@ -1217,7 +1296,6 @@
       el(prefix+"Cap").textContent=B.cap.toFixed(0);
       el(prefix+"Seats").textContent=seatsAvail(B).toFixed(0);
       el(prefix+"Delay").textContent=B.delay.toFixed(0);
-      el(prefix+"Next").textContent=stationLabel(B.next);
 
       setStatusBadge(el(prefix+"Status"), el(prefix+"StatusText"), B.status);
     }
@@ -1258,11 +1336,13 @@
       const step=branchStepPerTick(B, pen);
       if(step<=1e-6) return Infinity;
       if(stationId==="T6"){
+        if(B.mode!=="branch") return Infinity;
         if(B.next!=="T6") return Infinity;
         const delta=Math.abs(branchMarks.T6 - B.u);
         return delta/step*(state.tickMs/1000);
       }
       if(stationId==="T2"){
+        if(B.mode!=="branch") return Infinity;
         if(B.next==="T2"){
           const delta=Math.abs(B.u - branchMarks.T2);
           return delta/step*(state.tickMs/1000);
@@ -1402,7 +1482,7 @@
       }
 
       B.next = nextInMainLoop(stationId);
-      addLog("到站", `${B.id} 抵达 ${stationLabel(stationId)}，下一站 ${stationLabel(B.next)}（剩余座位：${seatsAvail(B)}）`);
+      addLog("到站", `${B.id} 抵达 ${stationLabel(stationId)}（剩余座位：${seatsAvail(B)}）`);
     }
 
     function dockBranch(key, stationId){
@@ -1422,7 +1502,7 @@
         B.mode="main";
         B.t=mainMarks.T2;
         B.next=nextInMainLoop("T2");
-        addLog("返回主环线", `${B.id} 已回到 ${stationLabel("T2")}，继续主环线至 ${stationLabel(B.next)}`);
+        addLog("返回主环线", `${B.id} 已回到 ${stationLabel("T2")}，继续主环线运行`);
       }
     }
 
@@ -1443,7 +1523,7 @@
       }
     }
 
-    /* ===== 摄像头：实时摄像头（放弃本地 mp4） ===== */
+    /* ===== 摄像头：实时摄像头 ===== */
     const cameras = [
       { id:"CAM-01", where:"S 宿舍总站 · 上行平台", pos:"S站上行端", ai:"客流/跌倒检测" },
       { id:"CAM-02", where:"T1 第一教学楼 · 出入口", pos:"T1东侧", ai:"拥堵检测" },
@@ -1555,7 +1635,6 @@
       }
     }
 
-    // FPS 估算：优先使用 requestVideoFrameCallback
     let fpsCounter = { frames:0, lastTs:0, fps:0 };
     function hookFps(){
       if(!camVideo) return;
@@ -1576,7 +1655,6 @@
         camVideo.requestVideoFrameCallback(onFrame);
       }else{
         setInterval(()=>{
-          // 无法精准统计时：维持一个平滑的“演示 FPS”
           fpsCounter.fps = Math.round(clamp((fpsCounter.fps||24) + rand(-2,2), 18, 30));
         }, 700);
       }
@@ -1646,9 +1724,7 @@
       btnCamRetry.addEventListener("click", ()=>startCamera(camDeviceSelect.value));
       btnCamStop.addEventListener("click", ()=>{ stopCamera(); camErr.style.display="none"; addLog("监控", "摄像头已停止"); });
 
-      // 初始先列设备（没有权限时 label 可能为空；开启后会刷新）
       await ensureDevicesListed();
-
       renderCam("CAM-01");
       hookFps();
     }
@@ -1709,8 +1785,6 @@
       document.querySelectorAll(".tabBtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
       el("tabPanelOps").classList.toggle("hide", tab!=="ops");
       el("tabPanelCams").classList.toggle("hide", tab!=="cams");
-
-      // 进入监控页：若尚未开启，提示用户可一键开启
       if(tab==="cams"){
         renderCam(camSelect.value || "CAM-01");
       }
@@ -1854,9 +1928,9 @@
     const musicErr = el("musicErr");
 
     const songs = [
-      { id:"S1", title:"稻香", artist:"周杰伦", src:"music/song01.mp3", note:"music/ 下" },
-      { id:"S2", title:"晴天", artist:"周杰伦", src:"music/song02.mp3", note:"music/ 下" },
-      { id:"S3", title:"青花瓷", artist:"周杰伦", src:"music/song03.mp3", note:"music/ 下" },
+      { id:"S1", title:"稻香", artist:"周杰伦", src:"music/song01.mp3", note:"放置同目录 song01.mp3" },
+      { id:"S2", title:"晴天", artist:"周杰伦", src:"music/song02.mp3", note:"放置同目录 song02.mp3" },
+      { id:"S3", title:"青花瓷", artist:"周杰伦", src:"music/song03.mp3", note:"放置同目录 song03.mp3" },
     ];
 
     function openSongModal(){
@@ -1896,7 +1970,7 @@
       if(p && typeof p.catch==="function"){
         p.catch(()=>{
           musicErr.style.display = "block";
-          musicErr.textContent = `无法播放：${song.src}。请确认音频文件存在于同目录，或浏览器允许自动播放（可先手动点播放）。`;
+          musicErr.textContent = `无法播放：${song.src}。请确认音频文件存在于同目录/正确路径，或浏览器允许播放（可先手动点 audio 播放）。`;
         });
       }
       addLog("点歌", `播放：${song.title}（${song.src}）`);
@@ -1910,7 +1984,7 @@
         row.innerHTML = `
           <div class="songMeta">
             <div class="songTitle">${escapeHtml(s.title)}</div>
-            <div class="songSub">${escapeHtml(s.artist)} · ${escapeHtml(s.note)}</div>
+            <div class="songSub">${escapeHtml(s.artist)} · ${escapeHtml(s.note ?? "")}</div>
           </div>
           <div class="songActions">
             <button class="primary miniBtn" data-act="play">播放</button>
@@ -1926,6 +2000,54 @@
         musicErr.textContent = `音频加载失败：${musicAudio.currentSrc || "未知源"}。请检查文件路径或格式。`;
       };
     }
+
+    /* ===== ✅ 校外人员充值 ===== */
+    const rechargeModal = el("rechargeModalBackdrop");
+    const btnRecharge = el("btnRecharge");
+    const btnRechargeClose = el("btnRechargeClose");
+    const btnRechargeCancel = el("btnRechargeCancel");
+    const btnRechargeSubmit = el("btnRechargeSubmit");
+    const rechargeOk = el("rechargeOk");
+
+    function openRecharge(){
+      rechargeOk.style.display = "none";
+      rechargeOk.textContent = "";
+      rechargeModal.style.display = "flex";
+    }
+    function closeRecharge(){
+      rechargeModal.style.display = "none";
+    }
+
+    btnRecharge.addEventListener("click", openRecharge);
+    btnRechargeClose.addEventListener("click", closeRecharge);
+    btnRechargeCancel.addEventListener("click", closeRecharge);
+    rechargeModal.addEventListener("click", (e)=>{ if(e.target===rechargeModal) closeRecharge(); });
+
+    btnRechargeSubmit.addEventListener("click", ()=>{
+      const name = el("rcName").value.trim();
+      const phone = el("rcPhone").value.trim();
+      const idno = el("rcId").value.trim();
+      const vno  = el("rcVisitorNo").value.trim();
+      const amt  = parseInt(el("rcAmount").value || "0", 10);
+      const pay  = el("rcPay").value;
+      const note = el("rcNote").value.trim();
+
+      if(!name || !phone || !(amt>0)){
+        rechargeOk.style.display = "block";
+        rechargeOk.textContent = "请至少填写：姓名、联系方式、充值金额（>0）。";
+        return;
+      }
+
+      const payLabel = ({wechat:"微信", alipay:"支付宝", bank:"银行卡", cash:"现金"})[pay] || pay;
+      addLog("充值成功", `校外人员 ${name} 充值 ${amt} 元（${payLabel}）${vno?`｜访客编号：${vno}`:""}${idno?`｜证件：${idno}`:""}${note?`｜备注：${note}`:""}`);
+
+      rechargeOk.style.display = "block";
+      rechargeOk.textContent = `充值已提交（演示）：${name} +${amt} 元（${payLabel}）。`;
+
+      // 可选：清空部分字段
+      el("rcAmount").value = String(amt);
+      el("rcNote").value = "";
+    });
 
     /* ===== 初始化 ===== */
     (function init(){
